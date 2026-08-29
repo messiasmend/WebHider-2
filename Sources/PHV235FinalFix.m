@@ -7,6 +7,7 @@
 @property(nonatomic,assign) BOOL showingHierarchy;
 - (void)render:(BOOL)hierarchyMode;
 - (void)hierarchyTapped;
+- (void)backTapped;
 @end
 
 static const void *kPH235OriginalDetails = &kPH235OriginalDetails;
@@ -76,11 +77,12 @@ static void PH235AlignButton(UIButton *button) {
     button.contentEdgeInsets = UIEdgeInsetsMake(0, 20, 0, 42);
 }
 
-static void PH235Walk(UIView *view, BOOL inElement) {
+static void PH235Walk(UIView *view, BOOL inElement, BOOL jsonScreen, UIViewController *vc) {
     for (UIView *sub in view.subviews.copy) {
         if ([sub isKindOfClass:[UIButton class]]) {
             UIButton *button = (UIButton *)sub;
             NSString *title = [button titleForState:UIControlStateNormal] ?: @"";
+
             if ([title isEqualToString:@"Copiar"] ||
                 [title isEqualToString:@"Ocultos"] ||
                 [title isEqualToString:@"Ocultar"] ||
@@ -89,20 +91,32 @@ static void PH235Walk(UIView *view, BOOL inElement) {
                 [title isEqualToString:@"Hierarquia"]) {
                 PH235AlignButton(button);
             }
-            if (inElement && [title isEqualToString:@"Elemento"]) {
-                [button setTitle:@"Voltar" forState:UIControlStateNormal];
+
+            if (!jsonScreen &&
+                ([title isEqualToString:@"Elemento"] ||
+                 [title isEqualToString:@"Voltar"] ||
+                 [title isEqualToString:@"Hierarquia"])) {
+                NSString *wantedTitle = inElement ? @"Voltar" : @"Elemento";
+                SEL wantedAction = inElement ? @selector(backTapped) : @selector(hierarchyTapped);
+                [button setTitle:wantedTitle forState:UIControlStateNormal];
+                [button removeTarget:nil action:NULL forControlEvents:UIControlEventTouchUpInside];
+                [button addTarget:vc action:wantedAction forControlEvents:UIControlEventTouchUpInside];
             }
         }
-        PH235Walk(sub, inElement);
+        PH235Walk(sub, inElement, jsonScreen, vc);
     }
 }
 
 static void PH235Render(id self, SEL _cmd, BOOL hierarchyMode) {
     if (PH235OrigRender) PH235OrigRender(self, _cmd, hierarchyMode);
     dispatch_async(dispatch_get_main_queue(), ^{
-        PH235Walk(((PHInspectorViewController *)self).view, PH235InElement(self));
-        if (PH235InElement(self)) {
-            for (UIView *sub in ((PHInspectorViewController *)self).view.subviews.copy) {
+        PHInspectorViewController *vc = (PHInspectorViewController *)self;
+        BOOL inElement = PH235InElement(self);
+        BOOL jsonScreen = [vc.currentSubtitle isEqualToString:@"Filtro JSON"];
+        PH235Walk(vc.view, inElement, jsonScreen, vc);
+
+        if (inElement) {
+            for (UIView *sub in vc.view.subviews.copy) {
                 for (UIView *nested in sub.subviews.copy) {
                     if ([nested isKindOfClass:[UILabel class]]) {
                         UILabel *label = (UILabel *)nested;
@@ -123,7 +137,7 @@ static void PH235Hierarchy(id self, SEL _cmd) {
         PH235SetElement(self, NO);
         NSString *original = PH235Get(self, kPH235OriginalDetails);
         if (original.length) vc.currentDetails = original;
-        vc.currentSubtitle = @"Elemento Web selecionado";
+        vc.currentSubtitle = @"Hierarquia DOM";
         if (PH235OrigHierarchy) PH235OrigHierarchy(self, _cmd);
         if (PH235OrigRender) PH235OrigRender(self, @selector(render:), YES);
         return;
@@ -136,7 +150,7 @@ static void PH235Hierarchy(id self, SEL _cmd) {
     vc.currentSubtitle = @"Elemento Web selecionado";
     PH235SetElement(self, YES);
 
-    if (PH235OrigRender) PH235OrigRender(self, @selector(render:), YES);
+    if (PH235OrigRender) PH235OrigRender(self, @selector(render:), NO);
 }
 
 __attribute__((constructor)) static void PH235Install(void) {
