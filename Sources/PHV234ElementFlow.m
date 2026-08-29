@@ -16,41 +16,183 @@ static const void *kPH234SelectedCode = &kPH234SelectedCode;
 static const void *kPH234SelectedSubtitle = &kPH234SelectedSubtitle;
 static const void *kPH234InTree = &kPH234InTree;
 
-static NSString *PH234Get(id obj, const void *key) { return objc_getAssociatedObject(obj,key); }
-static void PH234Set(id obj, const void *key, NSString *value) { objc_setAssociatedObject(obj,key,value,OBJC_ASSOCIATION_COPY_NONATOMIC); }
-static BOOL PH234Tree(id obj) { return [objc_getAssociatedObject(obj,kPH234InTree) boolValue]; }
-static void PH234SetTree(id obj, BOOL value) { objc_setAssociatedObject(obj,kPH234InTree,@(value),OBJC_ASSOCIATION_RETAIN_NONATOMIC); }
+static NSString *PH234Get(id obj, const void *key) {
+    return objc_getAssociatedObject(obj,key);
+}
+
+static void PH234Set(id obj, const void *key, NSString *value) {
+    objc_setAssociatedObject(obj,key,value,OBJC_ASSOCIATION_COPY_NONATOMIC);
+}
+
+static BOOL PH234Tree(id obj) {
+    return [objc_getAssociatedObject(obj,kPH234InTree) boolValue];
+}
+
+static void PH234SetTree(id obj, BOOL value) {
+    objc_setAssociatedObject(obj,kPH234InTree,@(value),OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+}
 
 static NSString *PH234Value(NSString *details, NSString *key) {
     for (NSString *line in [details componentsSeparatedByString:@"\n"]) {
         NSString *prefix = [key stringByAppendingString:@":"];
-        if ([line hasPrefix:prefix]) return [[line substringFromIndex:prefix.length] stringByTrimmingCharactersInSet:NSCharacterSet.whitespaceCharacterSet];
+        if ([line hasPrefix:prefix]) {
+            return [[line substringFromIndex:prefix.length]
+                    stringByTrimmingCharactersInSet:NSCharacterSet.whitespaceCharacterSet];
+        }
     }
     return @"";
 }
 
 static NSString *PH234ElementCode(NSString *details) {
-    NSString *html = PH234Value(details,@"HTML");
+    NSString *html = PH234Value(details ?: @"", @"HTML");
     NSString *tag = @"div";
+
     NSRange open = [html rangeOfString:@"<"];
-    NSRange close = (open.location != NSNotFound) ? [html rangeOfString:@">" options:0 range:NSMakeRange(open.location,html.length-open.location)] : NSMakeRange(NSNotFound,0);
+    NSRange close = (open.location != NSNotFound)
+        ? [html rangeOfString:@">" options:0 range:NSMakeRange(open.location,html.length-open.location)]
+        : NSMakeRange(NSNotFound,0);
+
     if (open.location != NSNotFound && close.location != NSNotFound && close.location > open.location) {
         NSString *inside = [html substringWithRange:NSMakeRange(open.location+1,close.location-open.location-1)];
         NSArray *parts = [inside componentsSeparatedByCharactersInSet:NSCharacterSet.whitespaceCharacterSet];
         if (parts.count && [parts[0] length]) tag = parts[0];
     }
+
     NSMutableString *attrs=[NSMutableString string];
     NSString *identifier=PH234Value(details,@"ID");
     NSString *classes=PH234Value(details,@"Classe");
     NSString *type=PH234Value(details,@"Tipo");
     NSString *href=PH234Value(details,@"Link");
+
     if(identifier.length)[attrs appendFormat:@" id=\"%@\"",identifier];
     if(classes.length)[attrs appendFormat:@" class=\"%@\"",classes];
     if(type.length && ![type isEqualToString:tag])[attrs appendFormat:@" type=\"%@\"",type];
     if(href.length)[attrs appendFormat:@" href=\"%@\"",href];
+
     NSString *text=PH234Value(details,@"Texto");
-    if(text.length) return [NSString stringWithFormat:@"<%@%@>\n    %@\n</%@>",tag,attrs,text,tag];
+    if(text.length) {
+        return [NSString stringWithFormat:@"<%@%@>\n    %@\n</%@>",tag,attrs,text,tag];
+    }
     return [NSString stringWithFormat:@"<%@%@></%@>",tag,attrs,tag];
+}
+
+static UIButton *PH234FindButton(UIView *root, NSString *title) {
+    if (!root) return nil;
+    if ([root isKindOfClass:UIButton.class]) {
+        UIButton *button=(UIButton *)root;
+        if ([[button titleForState:UIControlStateNormal] ?: @"" isEqualToString:title]) return button;
+    }
+    for (UIView *child in [root.subviews copy]) {
+        UIButton *found=PH234FindButton(child,title);
+        if (found) return found;
+    }
+    return nil;
+}
+
+static UIView *PH234Panel(UIViewController *vc) {
+    for (UIView *view in [vc.view.subviews copy]) {
+        if (![view isKindOfClass:UIButton.class]) return view;
+    }
+    return nil;
+}
+
+static void PH234AlignButtonLeft(UIButton *button) {
+    if (!button) return;
+    button.contentHorizontalAlignment=UIControlContentHorizontalAlignmentLeft;
+    button.contentVerticalAlignment=UIControlContentVerticalAlignmentCenter;
+    button.contentEdgeInsets=UIEdgeInsetsMake(0,18,0,18);
+    button.titleEdgeInsets=UIEdgeInsetsMake(0,8,0,0);
+    button.imageEdgeInsets=UIEdgeInsetsZero;
+    button.titleLabel.textAlignment=NSTextAlignmentLeft;
+    button.titleLabel.numberOfLines=1;
+}
+
+static void PH234MakeButtonLabelFit(UIButton *button) {
+    if (!button) return;
+    button.titleLabel.adjustsFontSizeToFitWidth=YES;
+    button.titleLabel.minimumScaleFactor=0.78;
+    button.titleLabel.numberOfLines=1;
+}
+
+static void PH234SetButtonAction(UIButton *button, id target, SEL action) {
+    if (!button || !target) return;
+    [button removeTarget:nil action:NULL forControlEvents:UIControlEventTouchUpInside];
+    [button addTarget:target action:action forControlEvents:UIControlEventTouchUpInside];
+}
+
+static void PH234ShrinkHeightConstraint(UIView *panel, UIView *view) {
+    if (!panel || !view) return;
+    for (NSLayoutConstraint *constraint in [panel.constraints copy]) {
+        BOOL isHeight = (constraint.firstAttribute == NSLayoutAttributeHeight || constraint.secondAttribute == NSLayoutAttributeHeight);
+        BOOL ownsView = (constraint.firstItem == view || constraint.secondItem == view);
+        if (isHeight && ownsView && constraint.constant > 50.0 && constraint.constant < 60.0) {
+            constraint.constant = round(constraint.constant * 0.90 * 10.0) / 10.0;
+        }
+    }
+}
+
+static void PH234CompactGUI(UIViewController *vc, BOOL elementMode) {
+    UIView *panel=PH234Panel(vc);
+    if (!panel) return;
+
+    UIButton *copy=PH234FindButton(panel,@"Copiar");
+    UIButton *hidden=PH234FindButton(panel,@"Ocultos");
+    UIButton *hide=PH234FindButton(panel,@"Ocultar");
+    UIButton *json=PH234FindButton(panel,@"JSON");
+    UIButton *close=PH234FindButton(panel,@"Fechar");
+    UIButton *save=PH234FindButton(panel,@"Salvar");
+
+    PH234ShrinkHeightConstraint(panel,copy.superview);
+    PH234ShrinkHeightConstraint(panel,hidden.superview);
+    PH234ShrinkHeightConstraint(panel,hide.superview);
+    PH234ShrinkHeightConstraint(panel,json.superview.superview);
+
+    for (NSLayoutConstraint *constraint in [panel.constraints copy]) {
+        if (constraint.firstItem == panel && constraint.firstAttribute == NSLayoutAttributeBottom && constraint.constant > -20.0) {
+            constraint.constant = -35.0;
+        }
+    }
+
+    if (elementMode) {
+        PH234AlignButtonLeft(copy);
+        PH234AlignButtonLeft(hidden);
+        PH234AlignButtonLeft(hide);
+    }
+
+    PH234MakeButtonLabelFit(copy);
+    PH234MakeButtonLabelFit(hidden);
+    PH234MakeButtonLabelFit(hide);
+    PH234MakeButtonLabelFit(json);
+    PH234MakeButtonLabelFit(close);
+    PH234MakeButtonLabelFit(save);
+}
+
+static void PH234UpdateNavigationButton(PHInspectorViewController *vc) {
+    BOOL tree=PH234Tree(vc);
+    UIButton *left=PH234FindButton(vc.view,@"Hierarquia");
+    if (!left) left=PH234FindButton(vc.view,@"Elemento");
+    if (!left) left=PH234FindButton(vc.view,@"Voltar");
+    if (!left) return;
+
+    NSString *title=tree ? @"Elemento" : @"Voltar";
+    NSString *symbol=tree ? @"list.bullet.indent" : @"chevron.left";
+    UIImage *image=[UIImage systemImageNamed:symbol];
+
+    [left setTitle:title forState:UIControlStateNormal];
+    if (image) [left setImage:image forState:UIControlStateNormal];
+    left.tintColor=[UIColor colorWithRed:0.039 green:0.518 blue:1.0 alpha:1.0];
+    [left setTitleColor:[UIColor colorWithRed:0.039 green:0.518 blue:1.0 alpha:1.0] forState:UIControlStateNormal];
+    PH234MakeButtonLabelFit(left);
+
+    [left removeTarget:nil action:NULL forControlEvents:UIControlEventTouchUpInside];
+    [left addTarget:vc action:@selector(backTapped) forControlEvents:UIControlEventTouchUpInside];
+}
+
+static void PH234ApplyUI(PHInspectorViewController *vc) {
+    dispatch_async(dispatch_get_main_queue(),^{
+        PH234UpdateNavigationButton(vc);
+        PH234CompactGUI(vc,!PH234Tree(vc));
+    });
 }
 
 static void (*PH234OrigShowInspector)(id,SEL,NSString*,NSString*);
@@ -62,11 +204,14 @@ static void (*PH234OrigHierarchy)(id,SEL);
 static void PH234ShowInspector(id self, SEL _cmd, NSString *details, NSString *subtitle) {
     PH234Set(self,kPH234SelectedCode,PH234ElementCode(details ?: @""));
     PH234Set(self,kPH234SelectedSubtitle,subtitle ?: @"Elemento Web selecionado");
+    PH234SetTree(self,YES);
     if(PH234OrigShowInspector) PH234OrigShowInspector(self,_cmd,details,subtitle);
+
     dispatch_async(dispatch_get_main_queue(),^{
         id manager=[NSClassFromString(@"PHOverlayManager") performSelector:@selector(sharedManager)];
         if([manager respondsToSelector:@selector(showHierarchy)]) [manager performSelector:@selector(showHierarchy)];
         PH234SetTree(self,YES);
+        PH234ApplyUI((PHInspectorViewController *)self);
     });
 }
 
@@ -78,38 +223,38 @@ static void PH234ShowSelectedWeb(id self, SEL _cmd, NSString *details) {
 static void PH234Render(id self, SEL _cmd, BOOL hierarchyMode) {
     if(PH234OrigRender) PH234OrigRender(self,_cmd,hierarchyMode);
     dispatch_async(dispatch_get_main_queue(),^{
-        PHInspectorViewController *vc=(PHInspectorViewController *)self;
-        BOOL tree=PH234Tree(self);
-        for(UIView *v in vc.view.subviews) {
-            for(UIView *sub in v.subviews) {
-                if(![sub isKindOfClass:[UIButton class]]) continue;
-                UIButton *b=(UIButton *)sub;
-                NSString *title=[b titleForState:UIControlStateNormal];
-                if([title isEqualToString:@"Hierarquia"] || [title isEqualToString:@"Voltar"]) [b setTitle:(tree?@"Elemento":@"Voltar") forState:UIControlStateNormal];
-            }
-        }
+        PH234ApplyUI((PHInspectorViewController *)self);
+        dispatch_async(dispatch_get_main_queue(),^{
+            PH234ApplyUI((PHInspectorViewController *)self);
+        });
     });
 }
 
 static void PH234Back(id self, SEL _cmd) {
     PHInspectorViewController *vc=(PHInspectorViewController *)self;
+
     if(PH234Tree(self)) {
         vc.currentDetails=PH234Get(self,kPH234SelectedCode) ?: @"";
         vc.currentSubtitle=PH234Get(self,kPH234SelectedSubtitle) ?: @"Elemento Web selecionado";
         vc.showingHierarchy=NO;
         PH234SetTree(self,NO);
         if(PH234OrigRender) PH234OrigRender(self,@selector(render:),NO);
+        PH234ApplyUI(vc);
         return;
     }
+
     id manager=[NSClassFromString(@"PHOverlayManager") performSelector:@selector(sharedManager)];
     if([manager respondsToSelector:@selector(showHierarchy)]) [manager performSelector:@selector(showHierarchy)];
     PH234SetTree(self,YES);
+    if(PH234OrigRender) PH234OrigRender(self,@selector(render:),YES);
+    PH234ApplyUI(vc);
 }
 
 static void PH234Hierarchy(id self, SEL _cmd) {
     id manager=[NSClassFromString(@"PHOverlayManager") performSelector:@selector(sharedManager)];
     if([manager respondsToSelector:@selector(showHierarchy)]) [manager performSelector:@selector(showHierarchy)];
     PH234SetTree(self,YES);
+    PH234ApplyUI((PHInspectorViewController *)self);
 }
 
 __attribute__((constructor)) static void PH234Install(void) {
@@ -117,10 +262,30 @@ __attribute__((constructor)) static void PH234Install(void) {
         Class c=NSClassFromString(@"PHInspectorViewController");
         if(!c)return;
         Method m;
-        m=class_getInstanceMethod(c,@selector(showInspectorDetails:subtitle:)); if(m){PH234OrigShowInspector=(void*)method_getImplementation(m); method_setImplementation(m,(IMP)PH234ShowInspector);}
-        m=class_getInstanceMethod(c,@selector(showSelectedWebElement:)); if(m){PH234OrigShowSelectedWeb=(void*)method_getImplementation(m); method_setImplementation(m,(IMP)PH234ShowSelectedWeb);}
-        m=class_getInstanceMethod(c,@selector(render:)); if(m){PH234OrigRender=(void*)method_getImplementation(m); method_setImplementation(m,(IMP)PH234Render);}
-        m=class_getInstanceMethod(c,@selector(backTapped)); if(m){PH234OrigBack=(void*)method_getImplementation(m); method_setImplementation(m,(IMP)PH234Back);}
-        m=class_getInstanceMethod(c,@selector(hierarchyTapped)); if(m){PH234OrigHierarchy=(void*)method_getImplementation(m); method_setImplementation(m,(IMP)PH234Hierarchy);}
+        m=class_getInstanceMethod(c,@selector(showInspectorDetails:subtitle:));
+        if(m){
+            PH234OrigShowInspector=(void*)method_getImplementation(m);
+            method_setImplementation(m,(IMP)PH234ShowInspector);
+        }
+        m=class_getInstanceMethod(c,@selector(showSelectedWebElement:));
+        if(m){
+            PH234OrigShowSelectedWeb=(void*)method_getImplementation(m);
+            method_setImplementation(m,(IMP)PH234ShowSelectedWeb);
+        }
+        m=class_getInstanceMethod(c,@selector(render:));
+        if(m){
+            PH234OrigRender=(void*)method_getImplementation(m);
+            method_setImplementation(m,(IMP)PH234Render);
+        }
+        m=class_getInstanceMethod(c,@selector(backTapped));
+        if(m){
+            PH234OrigBack=(void*)method_getImplementation(m);
+            method_setImplementation(m,(IMP)PH234Back);
+        }
+        m=class_getInstanceMethod(c,@selector(hierarchyTapped));
+        if(m){
+            PH234OrigHierarchy=(void*)method_getImplementation(m);
+            method_setImplementation(m,(IMP)PH234Hierarchy);
+        }
     });
 }
