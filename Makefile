@@ -14,7 +14,7 @@ WebHider_FILES = Tweak.xm \
     Sources/PHV26JSONFlowFinal.m \
     Sources/PHVisualStyle23.m
 
-WebHider_CFLAGS = -fobjc-arc
+WebHider_CFLAGS = -fobjc-arc -Wno-unused-function
 WebHider_FRAMEWORKS = UIKit Foundation WebKit
 
 include $(THEOS_MAKE_PATH)/tweak.mk
