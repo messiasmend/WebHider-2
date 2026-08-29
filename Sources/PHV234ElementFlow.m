@@ -29,6 +29,11 @@ static NSString *PH234Value(NSString *details, NSString *key) {
     return @"";
 }
 
+static BOOL PH234LooksLikeElementDetails(NSString *details) {
+    NSString *d = details ?: @"";
+    return [d rangeOfString:@"HTML:"].location != NSNotFound && [d rangeOfString:@"Rect:"].location != NSNotFound;
+}
+
 static NSString *PH234ElementCode(NSString *details) {
     NSString *html = PH234Value(details ?: @"", @"HTML");
     NSString *tag = @"div";
@@ -148,10 +153,27 @@ static void (*PH234OrigBack)(id,SEL);
 static void (*PH234OrigHierarchy)(id,SEL);
 
 static void PH234ShowInspector(id self, SEL _cmd, NSString *details, NSString *subtitle) {
-    PH234Set(self,kPH234SelectedCode,PH234ElementCode(details ?: @""));
+    NSString *payload = details ?: @"";
+    PH234Set(self,kPH234SelectedCode,payload);
     PH234Set(self,kPH234SelectedSubtitle,subtitle ?: @"Elemento Web selecionado");
+
+    if (PH234LooksLikeElementDetails(payload)) {
+        PH234SetTree(self,NO);
+        @try { [self setValue:payload forKey:@"currentDetails"]; } @catch (__unused NSException *e) {}
+        @try { [self setValue:(subtitle ?: @"Elemento Web selecionado") forKey:@"currentSubtitle"]; } @catch (__unused NSException *e) {}
+        if(PH234OrigShowInspector) PH234OrigShowInspector(self,_cmd,payload,subtitle);
+        dispatch_async(dispatch_get_main_queue(),^{
+            PH234SetTree(self,NO);
+            @try { [self setValue:payload forKey:@"currentDetails"]; } @catch (__unused NSException *e) {}
+            @try { [self setValue:(subtitle ?: @"Elemento Web selecionado") forKey:@"currentSubtitle"]; } @catch (__unused NSException *e) {}
+            if(PH234OrigRender) PH234OrigRender(self,@selector(render:),NO);
+            PH234ApplyUI((PHInspectorViewController *)self);
+        });
+        return;
+    }
+
     PH234SetTree(self,YES);
-    if(PH234OrigShowInspector) PH234OrigShowInspector(self,_cmd,details,subtitle);
+    if(PH234OrigShowInspector) PH234OrigShowInspector(self,_cmd,payload,subtitle);
     dispatch_async(dispatch_get_main_queue(),^{
         id manager=[NSClassFromString(@"PHOverlayManager") performSelector:@selector(sharedManager)];
         if([manager respondsToSelector:@selector(showHierarchy)]) [manager performSelector:@selector(showHierarchy)];
@@ -160,14 +182,20 @@ static void PH234ShowInspector(id self, SEL _cmd, NSString *details, NSString *s
 }
 
 static void PH234ShowSelectedWeb(id self, SEL _cmd, NSString *details) {
-    // Keep the complete selection in the actual property consumed by P233Render.
-    @try { [self setValue:details ?: @"" forKey:@"currentDetails"]; } @catch (__unused NSException *e) {}
+    NSString *payload = details ?: @"";
+    @try { [self setValue:payload forKey:@"currentDetails"]; } @catch (__unused NSException *e) {}
     @try { [self setValue:@"Elemento Web selecionado" forKey:@"currentSubtitle"]; } @catch (__unused NSException *e) {}
-    PH234Set(self,kPH234SelectedCode,details ?: @"");
+    PH234Set(self,kPH234SelectedCode,payload);
     PH234Set(self,kPH234SelectedSubtitle,@"Elemento Web selecionado");
     PH234SetTree(self,NO);
-    if(PH234OrigShowSelectedWeb) PH234OrigShowSelectedWeb(self,_cmd,details);
-    dispatch_async(dispatch_get_main_queue(),^{ PH234ApplyUI((PHInspectorViewController *)self); });
+    if(PH234OrigShowSelectedWeb) PH234OrigShowSelectedWeb(self,_cmd,payload);
+    dispatch_async(dispatch_get_main_queue(),^{
+        PH234SetTree(self,NO);
+        @try { [self setValue:payload forKey:@"currentDetails"]; } @catch (__unused NSException *e) {}
+        @try { [self setValue:@"Elemento Web selecionado" forKey:@"currentSubtitle"]; } @catch (__unused NSException *e) {}
+        if(PH234OrigRender) PH234OrigRender(self,@selector(render:),NO);
+        PH234ApplyUI((PHInspectorViewController *)self);
+    });
 }
 
 static void PH234Render(id self, SEL _cmd, BOOL hierarchyMode) {
