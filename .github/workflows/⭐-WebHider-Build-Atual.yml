@@ -16,13 +16,6 @@ jobs:
       - name: Checkout WebHider-2
         uses: actions/checkout@v4
 
-      - name: Checkout source WebHider 2.1 validado
-        uses: actions/checkout@v4
-        with:
-          repository: messiasmend/ProjetoH
-          ref: 9863104f365c19f1ad2aec473f5fc59fdd3be12b
-          path: source
-
       - name: Setup Theos
         uses: waruhachi/theos-action@v2.4.6
         with:
@@ -32,20 +25,18 @@ jobs:
           sdks-branch: master
 
       - name: Build WebHider 2.1
-        working-directory: source
         run: |
           set -euo pipefail
           make clean package FINALPACKAGE=1
 
       - name: Collect dylib
-        working-directory: source
         run: |
           set -euo pipefail
-          mkdir -p ../artifacts
+          mkdir -p artifacts
           DYLIB=$(find .theos -type f -name '*.dylib' | head -n 1)
           test -n "$DYLIB"
-          cp "$DYLIB" ../artifacts/WebHider-2.1.dylib
-          file ../artifacts/WebHider-2.1.dylib
+          cp "$DYLIB" artifacts/WebHider-2.1.dylib
+          file artifacts/WebHider-2.1.dylib
 
       - name: Upload WebHider 2.1
         uses: actions/upload-artifact@v4
