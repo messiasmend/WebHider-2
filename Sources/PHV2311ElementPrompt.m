@@ -14,13 +14,12 @@ static NSString *PH2311Value(NSString *details, NSString *key) {
     return @"";
 }
 
-static void PH2311SetElementPrompt(UIViewController *vc) {
+static void PH2311SetElementPrompt(PHInspectorViewController *vc) {
     if (![vc.currentSubtitle isEqualToString:@"Elemento Web selecionado"]) return;
     NSString *html=PH2311Value(vc.currentDetails ?: @"", @"HTML");
     if (!html.length) return;
 
-    // Only fill an existing text/code view belonging to the approved Element page.
-    // Do not add views, move the DOM tree, or rebuild the GUI.
+    // Only fill an existing text/code view. Do not create or move any GUI element.
     NSMutableArray *stack=[NSMutableArray arrayWithObject:vc.view];
     while (stack.count) {
         UIView *view=stack.lastObject;
