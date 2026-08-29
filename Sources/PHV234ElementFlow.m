@@ -187,8 +187,19 @@ static void PH234ShowInspector(id self, SEL _cmd, NSString *details, NSString *s
 }
 
 static void PH234ShowSelectedWeb(id self, SEL _cmd, NSString *details) {
+    /* Preserve the real element details so the approved 2.3.8 UI can render
+       the Element page from the actual selected-web-element payload. */
+    PHInspectorViewController *vc=(PHInspectorViewController *)self;
+    vc.currentDetails=details ?: @"";
+    vc.currentSubtitle=@"Elemento Web selecionado";
     PH234Set(self,kPH234SelectedCode,PH234ElementCode(details ?: @""));
+    PH234Set(self,kPH234SelectedSubtitle,@"Elemento Web selecionado");
+    PH234SetTree(self,NO);
     if(PH234OrigShowSelectedWeb) PH234OrigShowSelectedWeb(self,_cmd,details);
+    dispatch_async(dispatch_get_main_queue(),^{
+        PH234SetTree(self,NO);
+        PH234ApplyUI((PHInspectorViewController *)self);
+    });
 }
 
 static void PH234Render(id self, SEL _cmd, BOOL hierarchyMode) {
