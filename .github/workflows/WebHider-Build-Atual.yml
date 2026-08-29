@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - main
+      - gui-redesign-2.3.7
 
 permissions:
   contents: read
@@ -24,7 +25,7 @@ jobs:
           sdks-src: theos/sdks
           sdks-branch: master
 
-      - name: Build WebHider 2.1
+      - name: Build WebHider 2.3.7
         run: |
           set -euo pipefail
           make clean package FINALPACKAGE=1
@@ -40,12 +41,12 @@ jobs:
           mkdir -p artifacts
           DYLIB=$(find .theos -type f -name '*.dylib' | head -n 1)
           test -n "$DYLIB"
-          cp "$DYLIB" artifacts/WebHider-2.1.dylib
-          test -s artifacts/WebHider-2.1.dylib
+          cp "$DYLIB" artifacts/WebHider-2.3.7.dylib
+          test -s artifacts/WebHider-2.3.7.dylib
 
-      - name: Upload WebHider 2.1
+      - name: Upload WebHider 2.3.7
         uses: actions/upload-artifact@v4
         with:
-          name: WebHider-2.1
-          path: artifacts/WebHider-2.1.dylib
+          name: WebHider-2.3.7
+          path: artifacts/WebHider-2.3.7.dylib
           if-no-files-found: error
