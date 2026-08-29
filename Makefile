@@ -17,7 +17,8 @@ WebHider_FILES = Tweak.xm \
     Sources/PHV233FinalUI.m \
     Sources/PHV234ElementFlow.m \
     Sources/PHV30ElementPromptFix.m \
-    Sources/PHV31ElementPromptFix.m
+    Sources/PHV31ElementPromptFix.m \
+    Sources/PHV32ElementPromptFinal.m
 
 WebHider_CFLAGS = -fobjc-arc -Wno-unused-function
 WebHider_FRAMEWORKS = UIKit Foundation WebKit
