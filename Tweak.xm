@@ -90,7 +90,7 @@ static void PH237Shrink(UIView *view) {
         BOOL isHeight = c.firstAttribute == NSLayoutAttributeHeight || c.secondAttribute == NSLayoutAttributeHeight;
         BOOL owns = c.firstItem == view || c.secondItem == view;
         if (isHeight && owns && c.constant > 40.0 && c.constant < 65.0) {
-            c.constant *= 0.80; // 20% additional reduction after the previous 10%
+            c.constant *= 0.80;
             changed = YES;
         }
     }
@@ -175,12 +175,8 @@ static void PH237CompactGUI(UIViewController *vc) {
     PH237Fit(left);
     PH237Fit(close);
     PH237Fit(save);
+    if (left && [[left titleForState:UIControlStateNormal] isEqualToString:@"Elemento"]) PH237Left(left);
 
-    if (left && [[left titleForState:UIControlStateNormal] isEqualToString:@"Elemento"]) {
-        PH237Left(left);
-    }
-
-    // A GUI é encurtada para acompanhar a redução dos controles.
     for (NSLayoutConstraint *c in [panel.superview.constraints copy]) {
         if (c.firstItem == panel && c.firstAttribute == NSLayoutAttributeBottom && c.constant > -80.0) c.constant = -38.0;
     }
@@ -224,7 +220,7 @@ static void PH237InstallInspectorHooks(void) {
     if (m) {
         IMP current = method_getImplementation(m);
         if (current != (IMP)PH237Selected) {
-            PH237OriginalSelected = (void *)current;
+            PH237OriginalSelected = (void (*)(id, SEL, NSString *))current;
             method_setImplementation(m, (IMP)PH237Selected);
         }
     }
@@ -232,7 +228,7 @@ static void PH237InstallInspectorHooks(void) {
     if (m) {
         IMP current = method_getImplementation(m);
         if (current != (IMP)PH237Render) {
-            PH237OriginalRender = (void *)current;
+            PH237OriginalRender = (void (*)(id, SEL, BOOL))current;
             method_setImplementation(m, (IMP)PH237Render);
         }
     }
