@@ -8,7 +8,6 @@ TWEAK_NAME = WebHider
 WebHider_FILES = Tweak.xm \
     Sources/PHThreeFingerGesture.m \
     Sources/PHOverlayManager.m \
-    Sources/PHOverlayManager.m \
     Sources/PHV17ButtonOrderFix.m \
     Sources/PHV21FilterFormatFix.m \
     Sources/PHV21HiddenNamesFix.m \
