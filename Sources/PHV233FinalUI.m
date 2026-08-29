@@ -67,7 +67,8 @@ static void P233Render(id self, SEL _cmd, BOOL hierarchyMode) {
             UILabel *content=P233Label(vc.currentDetails,[UIFont monospacedSystemFontOfSize:13 weight:UIFontWeightRegular],UIColor.whiteColor);[scroll addSubview:content];
             [NSLayoutConstraint activateConstraints:@[[scroll.leadingAnchor constraintEqualToAnchor:info.leadingAnchor constant:12],[scroll.trailingAnchor constraintEqualToAnchor:info.trailingAnchor constant:-12],[scroll.topAnchor constraintEqualToAnchor:icon.bottomAnchor constant:12],[scroll.bottomAnchor constraintEqualToAnchor:info.bottomAnchor constant:-12],[content.topAnchor constraintEqualToAnchor:scroll.contentLayoutGuide.topAnchor constant:10],[content.leadingAnchor constraintEqualToAnchor:scroll.contentLayoutGuide.leadingAnchor constant:10],[content.trailingAnchor constraintEqualToAnchor:scroll.contentLayoutGuide.trailingAnchor constant:-10],[content.bottomAnchor constraintEqualToAnchor:scroll.contentLayoutGuide.bottomAnchor constant:-10],[content.widthAnchor constraintEqualToAnchor:scroll.frameLayoutGuide.widthAnchor constant:-20]]];
         } else {
-            NSMutableDictionary *rows=[[P233Parse(vc.currentDetails?:@"") mutableCopy] ?: [NSMutableDictionary dictionary]];
+            NSMutableDictionary *rows=[P233Parse(vc.currentDetails?:@"") mutableCopy];
+            if(!rows)rows=[NSMutableDictionary dictionary];
             if(rows[@"HTML"]&&!rows[@"Tipo"])rows[@"Tipo"]=rows[@"HTML"];
             NSMutableArray *preferred=[NSMutableArray array];for(NSString*k in @[@"Tipo",@"ID",@"Classes",@"Classe",@"Texto",@"Retângulo (Rect)"])if(rows[k]&&![preferred containsObject:k]){if([k isEqualToString:@"Classe"]&&rows[@"Classes"])continue;[preferred addObject:k];}
             CGFloat y=53;for(NSString*k in preferred){P233AddRow(info,k,rows[k],y);y+=30;if(y>168)break;}
