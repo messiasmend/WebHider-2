@@ -14,7 +14,8 @@ WebHider_FILES = Tweak.xm \
     Sources/PHV26JSONFlowFinal.m \
     Sources/PHVisualStyle23.m \
     Sources/PHV23SaveFix.m \
-    Sources/PHV233FinalUI.m
+    Sources/PHV233FinalUI.m \
+    Sources/PHV234ElementFlow.m
 
 WebHider_CFLAGS = -fobjc-arc -Wno-unused-function
 WebHider_FRAMEWORKS = UIKit Foundation WebKit
