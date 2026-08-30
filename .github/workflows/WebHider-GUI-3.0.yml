@@ -6,6 +6,7 @@ on:
     branches:
       - 3.0
       - 3.0-14
+      - 3.0-16
 
 permissions:
   contents: read
