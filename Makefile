@@ -12,6 +12,7 @@ WebHider_FILES = Tweak.xm \
     Sources/PHV21HiddenNamesFix.m \
     Sources/PHV26JSONFlowFinal.m \
     Sources/PHVisualStyle23.m \
+    Sources/PHV30SelectionStateFix.m \
     Sources/PHV23SaveFix.m
 
 WebHider_CFLAGS = -fobjc-arc -Wno-unused-function
