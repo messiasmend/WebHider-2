@@ -1,0 +1,38 @@
+name: WebHider — GUI 3.0-13
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - 3.0-13
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Theos
+        uses: waruhachi/theos-action@v2.4.6
+        with:
+          theos-src: theos/theos
+          theos-branch: master
+          sdks-src: theos/sdks
+          sdks-branch: master
+      - name: Build
+        run: make clean package FINALPACKAGE=1
+      - name: Collect dylib
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts
+          DYLIB=$(find .theos -type f -name '*.dylib' | head -n 1)
+          test -n "$DYLIB"
+          cp "$DYLIB" artifacts/WebHider-3.0-13.dylib
+      - name: Upload
+        uses: actions/upload-artifact@v4
+        with:
+          name: WebHider-3.0-13
+          path: artifacts/WebHider-3.0-13.dylib
+          if-no-files-found: error
