@@ -1,6 +1,12 @@
 #import <UIKit/UIKit.h>
 #import <objc/runtime.h>
 
+@class PHOverlayManager;
+@interface PHOverlayManager : NSObject
++ (instancetype)sharedManager;
+- (BOOL)selectionModeActive;
+@end
+
 @interface PHInspectorViewController : UIViewController
 @property(nonatomic,copy) NSString *currentDetails;
 @property(nonatomic,copy) NSString *currentSubtitle;
@@ -14,6 +20,7 @@
 - (void)hideTapped;
 - (void)hiddenTapped;
 - (void)saveTapped;
+- (void)showSelectionPrompt;
 @end
 
 static UIColor *P233C(NSString *hex) {
@@ -49,6 +56,11 @@ static void P233AddRow(UIView *card, NSString *key, NSString *value, CGFloat y) 
 }
 static void P233Render(id self, SEL _cmd, BOOL hierarchyMode) {
     PHInspectorViewController *vc=(PHInspectorViewController*)self;
+    PHOverlayManager *manager=[PHOverlayManager sharedManager];
+    if (manager && [manager selectionModeActive]) {
+        [vc showSelectionPrompt];
+        return;
+    }
     dispatch_async(dispatch_get_main_queue(), ^{
         for(UIView*v in vc.view.subviews.copy)[v removeFromSuperview]; vc.view.backgroundColor=UIColor.clearColor;
         UIView *panel=[UIView new];panel.translatesAutoresizingMaskIntoConstraints=NO;panel.backgroundColor=P233C(@"#0E1013");panel.layer.cornerRadius=26;panel.layer.borderWidth=1;panel.layer.borderColor=P233C(@"#35383E").CGColor;panel.layer.masksToBounds=YES;[vc.view addSubview:panel];
