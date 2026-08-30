@@ -61,7 +61,8 @@ static void P233Render(id self, SEL _cmd, BOOL hierarchyMode) {
         UILabel*it=P233Label(@"Informações do elemento",[UIFont systemFontOfSize:19 weight:UIFontWeightMedium],UIColor.whiteColor);[info addSubview:it];
         UIImageView*chev=[[UIImageView alloc]initWithImage:[UIImage systemImageNamed:@"chevron.right"]];chev.translatesAutoresizingMaskIntoConstraints=NO;chev.tintColor=P233C(@"#8F949D");[info addSubview:chev];
         [NSLayoutConstraint activateConstraints:@[[icon.leadingAnchor constraintEqualToAnchor:info.leadingAnchor constant:20],[icon.topAnchor constraintEqualToAnchor:info.topAnchor constant:16],[icon.widthAnchor constraintEqualToConstant:23],[icon.heightAnchor constraintEqualToConstant:23],[it.leadingAnchor constraintEqualToAnchor:icon.trailingAnchor constant:15],[it.centerYAnchor constraintEqualToAnchor:icon.centerYAnchor],[chev.trailingAnchor constraintEqualToAnchor:info.trailingAnchor constant:-18],[chev.centerYAnchor constraintEqualToAnchor:icon.centerYAnchor],[chev.widthAnchor constraintEqualToConstant:16],[chev.heightAnchor constraintEqualToConstant:16]]];
-        BOOL rawMode=hierarchyMode||[sub isEqualToString:@"Filtro JSON"];
+        BOOL elementMode=(!hierarchyMode && [sub isEqualToString:@"Elemento Web selecionado"]);
+        BOOL rawMode=hierarchyMode || elementMode || [sub isEqualToString:@"Filtro JSON"];
         if(rawMode){
             UIScrollView *scroll=[UIScrollView new];scroll.translatesAutoresizingMaskIntoConstraints=NO;scroll.alwaysBounceVertical=YES;scroll.showsVerticalScrollIndicator=YES;scroll.indicatorStyle=UIScrollViewIndicatorStyleWhite;scroll.backgroundColor=P233C(@"#15171B");scroll.layer.cornerRadius=10;scroll.layer.masksToBounds=YES;[info addSubview:scroll];
             UILabel *content=P233Label(vc.currentDetails,[UIFont monospacedSystemFontOfSize:13 weight:UIFontWeightRegular],UIColor.whiteColor);[scroll addSubview:content];
@@ -73,9 +74,9 @@ static void P233Render(id self, SEL _cmd, BOOL hierarchyMode) {
             NSMutableArray *preferred=[NSMutableArray array];for(NSString*k in @[@"Tipo",@"ID",@"Classes",@"Classe",@"Texto",@"Retângulo (Rect)"])if(rows[k]&&![preferred containsObject:k]){if([k isEqualToString:@"Classe"]&&rows[@"Classes"])continue;[preferred addObject:k];}
             CGFloat y=53;for(NSString*k in preferred){P233AddRow(info,k,rows[k],y);y+=30;if(y>168)break;}
         }
-        BOOL back=rawMode;
+        BOOL back=elementMode || [sub isEqualToString:@"Filtro JSON"];
         UIView *seg=[UIView new];seg.translatesAutoresizingMaskIntoConstraints=NO;seg.backgroundColor=P233C(@"#15171B");seg.layer.cornerRadius=17;seg.layer.borderWidth=1;seg.layer.borderColor=P233C(@"#2B2E35").CGColor;seg.layer.masksToBounds=YES;[panel addSubview:seg];
-        UIButton *left=P233Button(vc,back?@"Voltar":@"Hierarquia",back?@"chevron.left":@"list.bullet.indent",back?@selector(backTapped):@selector(hierarchyTapped),P233C(@"#0A84FF"),P233C(@"#191D24"),YES);
+        UIButton *left=P233Button(vc,back?@"Voltar":@"Elemento",back?@"chevron.left":@"list.bullet.indent",back?@selector(backTapped):@selector(hierarchyTapped),P233C(@"#0A84FF"),P233C(@"#191D24"),YES);
         UIButton *json=P233Button(vc,@"JSON",@"curlybraces",NSSelectorFromString(@"ph_jsonTapped26"),P233C(@"#C7CBD1"),P233C(@"#15171B"),YES);[seg addSubview:left];[seg addSubview:json];
         UIView *copyC=P233Card();copyC.backgroundColor=P233C(@"#15171B");[panel addSubview:copyC];UIButton*copy=P233Button(vc,@"Copiar",@"doc.on.doc",@selector(copyTapped),P233C(@"#0A84FF"),UIColor.clearColor,NO);[copyC addSubview:copy];
         UIView *hiddenC=P233Card();hiddenC.backgroundColor=P233C(@"#15171B");[panel addSubview:hiddenC];UIButton*hidden=P233Button(vc,@"Ocultos",@"eye.slash",@selector(hiddenTapped),P233C(@"#A970FF"),UIColor.clearColor,NO);[hiddenC addSubview:hidden];
