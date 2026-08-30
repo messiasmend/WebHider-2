@@ -42,20 +42,25 @@ static void PH30Render(id self, SEL _cmd, BOOL hierarchyMode) {
     }
 }
 
-__attribute__((constructor)) static void PH30InstallSelectionStateGuard(void) {
-    dispatch_async(dispatch_get_main_queue(), ^{
-        Class cls = NSClassFromString(@"PHInspectorViewController");
-        if (!cls) return;
+static void PH30InstallSelectionStateGuard(void) {
+    Class cls = NSClassFromString(@"PHInspectorViewController");
+    if (!cls) return;
 
-        Method render = class_getInstanceMethod(cls, @selector(render:));
-        if (!render) return;
+    Method render = class_getInstanceMethod(cls, @selector(render:));
+    if (!render) return;
 
-        static dispatch_once_t onceToken;
-        dispatch_once(&onceToken, ^{
-            PH30OriginalRender = method_getImplementation(render);
-            if (PH30OriginalRender && PH30OriginalRender != (IMP)PH30Render) {
-                method_setImplementation(render, (IMP)PH30Render);
-            }
-        });
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        PH30OriginalRender = method_getImplementation(render);
+        if (PH30OriginalRender && PH30OriginalRender != (IMP)PH30Render) {
+            method_setImplementation(render, (IMP)PH30Render);
+        }
+    });
+}
+
+__attribute__((constructor)) static void PH30InstallSelectionStateGuardAtLaunch(void) {
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.25 * NSEC_PER_SEC)),
+                   dispatch_get_main_queue(), ^{
+        PH30InstallSelectionStateGuard();
     });
 }
